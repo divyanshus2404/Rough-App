@@ -8,8 +8,12 @@ create table public.profiles (
   id uuid references auth.users on delete cascade not null primary key,
   email text unique not null,
   full_name text,
+  enrollment_number text unique,
   avatar_url text,
+  signature_url text,
+  face_scan_url text,
   is_verified_student boolean default false,
+  verification_status text default 'pending', -- 'pending', 'verified', 'rejected'
   university_domain text,
   trust_score integer default 100,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
