@@ -1,14 +1,15 @@
 @import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-brand: #4f46e5;
-  --color-brand-light: #6366f1;
-  --color-brand-dark: #4338ca;
-  --color-background: #fafafa;
-  --color-surface: #ffffff;
-  --color-foreground: #0f172a;
-  --color-muted: #64748b;
-  --color-border: #e2e8f0;
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-dark: var(--brand-dark);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
   
   --font-sans: var(--font-inter);
   
@@ -19,8 +20,26 @@
 }
 
 :root {
+  --brand: #4f46e5;
+  --brand-light: #6366f1;
+  --brand-dark: #4338ca;
   --background: #fafafa;
+  --surface: #ffffff;
   --foreground: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+}
+
+.dark {
+  /* REALLY COOL DARK MODE: deep space glass with neon accents */
+  --brand: #818cf8; /* Bright Neon Indigo */
+  --brand-light: #a5b4fc;
+  --brand-dark: #6366f1;
+  --background: #050511; /* Deep space midnight */
+  --surface: #0a0a1a;    /* Slightly lighter panel, very dark blue */
+  --foreground: #f8fafc; /* Sharp white text */
+  --muted: #94a3b8;
+  --border: #1e1e38;     /* Subtle indigo-tinted dark border */
 }
 
 body {
@@ -28,6 +47,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Glassmorphism utility */
@@ -36,6 +56,14 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(10, 10, 26, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(129, 140, 248, 0.15); /* Subtle neon border */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
 /* Smooth scrolling */

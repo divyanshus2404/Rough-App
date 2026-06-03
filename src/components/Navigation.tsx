@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Search, ShoppingBag, User } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default function Navigation() {
   return (
@@ -37,6 +38,7 @@ export default function Navigation() {
 
           {/* Auth & Actions */}
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <Link href="/sell" className="hidden sm:inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-brand hover:bg-brand-light shadow-soft hover:shadow-hover transition-all duration-300">
               Start Selling
             </Link>
