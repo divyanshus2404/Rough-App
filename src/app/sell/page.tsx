@@ -2,7 +2,7 @@
 
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
-import { UploadCloud, CheckCircle2, X, Crop, RotateCw, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { UploadCloud, CheckCircle2, X, Crop, RotateCw, Image as ImageIcon, Loader2, MapPin, ShieldCheck } from 'lucide-react'
 import { useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -10,6 +10,23 @@ import Cropper from 'react-easy-crop'
 import getCroppedImg from '@/utils/cropImage'
 import { createClient } from '@/utils/supabase/client'
 import { createListing } from '@/app/actions/listings'
+
+const SWAP_CATEGORIES = [
+  { id: 'electronics', label: 'Electronics' },
+  { id: 'books-notes', label: 'Books & Notes' },
+  { id: 'furniture', label: 'Furniture' },
+  { id: 'clothing', label: 'Clothing' },
+  { id: 'others', label: 'Others' }
+]
+
+const CURRENCIES = [
+  { code: 'INR', symbol: '₹' },
+  { code: 'USD', symbol: '$' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },
+  { code: 'CAD', symbol: '$' },
+  { code: 'AUD', symbol: '$' }
+]
 
 export default function SellPage() {
   const [step, setStep] = useState(1)
@@ -20,7 +37,9 @@ export default function SellPage() {
   const [condition, setCondition] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
+  const [currency, setCurrency] = useState('INR')
   const [isSwapOpen, setIsSwapOpen] = useState(false)
+  const [swapPreferences, setSwapPreferences] = useState<string[]>([])
 
   // Image Upload & Crop State
   const [images, setImages] = useState<string[]>([]) // Array of cropped image URLs
@@ -80,6 +99,12 @@ export default function SellPage() {
     setImages(images.filter((_, i) => i !== index))
   }
 
+  const toggleSwapPreference = (id: string) => {
+    setSwapPreferences(prev => 
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    )
+  }
+
   const [isPublishing, setIsPublishing] = useState(false)
   const [publishError, setPublishError] = useState('')
   const [publishSuccess, setPublishSuccess] = useState(false)
@@ -104,7 +129,6 @@ export default function SellPage() {
 
       // 1. Upload Images to Supabase Storage
       for (let i = 0; i < images.length; i++) {
-        // Fetch the blob from the local object URL
         const response = await fetch(images[i])
         const blob = await response.blob()
         const file = new File([blob], `listing-${Date.now()}-${i}.jpg`, { type: 'image/jpeg' })
@@ -131,7 +155,9 @@ export default function SellPage() {
         condition,
         description,
         price: Number(price),
+        currency,
         isSwapOpen,
+        swapPreferences,
         images: uploadedImageUrls
       })
 
@@ -146,11 +172,13 @@ export default function SellPage() {
     }
   }
 
+  const selectedCurrencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol || '₹'
+
   return (
     <>
       <Navigation />
       <main className="flex-1 bg-surface min-h-screen py-12 relative">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="mb-8">
             <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Create a Listing</h1>
@@ -167,7 +195,7 @@ export default function SellPage() {
 
             <div className="p-8">
               {step === 1 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6 max-w-3xl mx-auto">
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">Listing Title</label>
                     <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. MacBook Pro M1 2020 256GB" className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand" />
@@ -209,9 +237,9 @@ export default function SellPage() {
                     {images.length > 0 && (
                       <div className="flex flex-wrap gap-4 mb-4">
                         {images.map((img, i) => (
-                          <div key={i} className="relative w-24 h-24 rounded-xl border border-border overflow-hidden">
+                          <div key={i} className="relative w-24 h-24 rounded-xl border border-border overflow-hidden shadow-sm">
                             <img src={img} alt={`Cropped ${i}`} className="w-full h-full object-cover" />
-                            <button onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-red-500 transition-colors">
+                            <button onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-red-500 transition-colors backdrop-blur-sm">
                               <X size={14} />
                             </button>
                           </div>
@@ -222,13 +250,13 @@ export default function SellPage() {
                     {images.length < 5 && (
                       <div 
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full h-40 border-2 border-dashed border-border rounded-xl bg-gray-50 flex flex-col items-center justify-center text-muted hover:bg-gray-100 transition-colors cursor-pointer group"
+                        className="w-full h-40 border-2 border-dashed border-brand/50 rounded-xl bg-brand/5 flex flex-col items-center justify-center text-brand hover:bg-brand/10 transition-colors cursor-pointer group"
                       >
                         <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                           <UploadCloud size={24} className="text-brand" />
                         </div>
                         <span className="font-semibold text-sm">Upload or Take Photo</span>
-                        <span className="text-xs mt-1">Up to 5 images (PNG, JPG)</span>
+                        <span className="text-xs mt-1 text-muted">Up to 5 images (PNG, JPG)</span>
                         <input type="file" accept="image/*" ref={fileInputRef} onChange={onFileChange} className="hidden" />
                       </div>
                     )}
@@ -248,21 +276,70 @@ export default function SellPage() {
               )}
 
               {step === 2 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8 max-w-3xl mx-auto">
+                  
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">Price</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-bold text-lg">$</span>
-                      <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" className="w-full pl-8 pr-4 py-4 text-lg border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand" />
+                    <label className="block text-sm font-semibold text-foreground mb-2">Price & Currency</label>
+                    <div className="flex gap-4">
+                      <select 
+                        value={currency} 
+                        onChange={(e) => setCurrency(e.target.value)}
+                        className="w-32 px-4 py-4 text-lg font-semibold border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand bg-gray-50 text-foreground appearance-none"
+                      >
+                        {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+                      </select>
+                      
+                      <div className="relative flex-1">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-bold text-lg">{selectedCurrencySymbol}</span>
+                        <input 
+                          type="number" 
+                          value={price} 
+                          onChange={(e) => setPrice(e.target.value)} 
+                          placeholder="0.00" 
+                          className="w-full pl-8 pr-4 py-4 text-lg font-bold border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand" 
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex gap-3">
-                    <input type="checkbox" id="swap" checked={isSwapOpen} onChange={(e) => setIsSwapOpen(e.target.checked)} className="w-5 h-5 mt-0.5 rounded border-gray-300 text-brand focus:ring-brand" />
-                    <div>
-                      <label htmlFor="swap" className="font-bold text-blue-900 block cursor-pointer">Open to Swapping?</label>
-                      <p className="text-sm text-blue-800 mt-1 opacity-90">Allow other students to offer items of equivalent value instead of cash.</p>
+                  <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl">
+                    <div className="flex gap-3 items-start mb-4">
+                      <input type="checkbox" id="swap" checked={isSwapOpen} onChange={(e) => setIsSwapOpen(e.target.checked)} className="w-5 h-5 mt-0.5 rounded border-gray-300 text-brand focus:ring-brand" />
+                      <div>
+                        <label htmlFor="swap" className="font-bold text-blue-900 block cursor-pointer">Open to Swapping?</label>
+                        <p className="text-sm text-blue-800 mt-1 opacity-90">Allow other students to offer items of equivalent value instead of cash.</p>
+                      </div>
                     </div>
+
+                    <AnimatePresence>
+                      {isSwapOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, height: 0 }} 
+                          animate={{ opacity: 1, height: 'auto' }} 
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-4 border-t border-blue-200/50">
+                            <label className="block text-sm font-semibold text-blue-900 mb-3">I'm looking to swap for:</label>
+                            <div className="flex flex-wrap gap-2">
+                              {SWAP_CATEGORIES.map(cat => (
+                                <button
+                                  key={cat.id}
+                                  onClick={() => toggleSwapPreference(cat.id)}
+                                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all border ${
+                                    swapPreferences.includes(cat.id) 
+                                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                                      : 'bg-white text-blue-700 border-blue-200 hover:border-blue-400'
+                                  }`}
+                                >
+                                  {cat.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div className="pt-8 flex justify-between">
@@ -270,21 +347,22 @@ export default function SellPage() {
                       Back
                     </button>
                     <button onClick={() => setStep(3)} disabled={!price} className="px-8 py-3 bg-brand text-white font-bold rounded-xl shadow-md hover:bg-brand-dark transition-all disabled:opacity-50">
-                      Continue
+                      Preview Post
                     </button>
                   </div>
                 </motion.div>
               )}
 
               {step === 3 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8 text-center py-8">
+                <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8">
+                  
                   {publishSuccess ? (
-                    <>
+                    <div className="text-center py-16">
                       <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                          <CheckCircle2 size={48} />
                       </div>
                       <h2 className="text-3xl font-extrabold text-foreground">Listing Published!</h2>
-                      <p className="text-muted text-lg max-w-md mx-auto">
+                      <p className="text-muted text-lg max-w-md mx-auto mt-2">
                         Your listing "{title}" is now live on Swaptopia.
                       </p>
                       <div className="pt-8 flex justify-center">
@@ -292,31 +370,91 @@ export default function SellPage() {
                           Browse Listings
                         </Link>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <>
-                      <div className="w-24 h-24 bg-blue-100 text-brand rounded-full flex items-center justify-center mx-auto mb-6">
-                         <CheckCircle2 size={48} />
+                      <div className="flex items-center justify-between border-b border-border pb-4 mb-6">
+                        <h2 className="text-2xl font-bold text-foreground">Preview Your Listing</h2>
+                        <button onClick={() => setStep(1)} className="text-sm font-semibold text-brand hover:text-brand-dark flex items-center gap-1 bg-brand/10 px-4 py-2 rounded-full">
+                          Edit Details
+                        </button>
                       </div>
-                      <h2 className="text-3xl font-extrabold text-foreground">Ready to Publish!</h2>
-                      <p className="text-muted text-lg max-w-md mx-auto">
-                        Your listing "{title}" for ${price} looks great. It will be immediately visible to all verified students on campus.
-                      </p>
+
+                      {/* Mockup of the Listing Detail Page */}
+                      <div className="bg-gray-50 rounded-2xl p-6 border border-border shadow-inner">
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          
+                          {/* Image Gallery Mock */}
+                          <div className="space-y-4">
+                            <div className="w-full aspect-square rounded-2xl bg-white border border-border shadow-sm overflow-hidden flex items-center justify-center">
+                              {images[0] ? (
+                                <img src={images[0]} alt="Preview Main" className="w-full h-full object-cover" />
+                              ) : (
+                                <ImageIcon size={48} className="text-muted/30" />
+                              )}
+                            </div>
+                            {images.length > 1 && (
+                              <div className="flex gap-2 overflow-x-auto pb-2">
+                                {images.slice(1).map((img, i) => (
+                                  <div key={i} className="w-20 h-20 rounded-xl border border-border overflow-hidden flex-shrink-0">
+                                    <img src={img} alt={`Preview ${i+1}`} className="w-full h-full object-cover" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Details Mock */}
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-brand/10 text-brand text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                                {category.replace('-', ' ')}
+                              </span>
+                              <span className="bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                                {condition}
+                              </span>
+                            </div>
+
+                            <h3 className="text-2xl font-bold text-foreground leading-tight mb-2">{title}</h3>
+                            <h2 className="text-4xl font-extrabold text-foreground mb-6">{selectedCurrencySymbol}{price} <span className="text-sm text-muted font-medium">{currency}</span></h2>
+
+                            <div className="bg-white p-4 rounded-xl border border-border shadow-sm mb-6">
+                              <h4 className="font-bold text-sm text-foreground mb-2">Description</h4>
+                              <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">{description || 'No description provided.'}</p>
+                            </div>
+
+                            {isSwapOpen && (
+                              <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6">
+                                <h4 className="font-bold text-sm text-blue-900 mb-2 flex items-center gap-2">Open to Swapping</h4>
+                                {swapPreferences.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {swapPreferences.map(pref => {
+                                      const label = SWAP_CATEGORIES.find(c => c.id === pref)?.label || pref
+                                      return <span key={pref} className="bg-white text-blue-700 border border-blue-200 text-xs font-semibold px-2 py-1 rounded-md">{label}</span>
+                                    })}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-blue-700">Willing to review all swap offers.</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                      </div>
 
                       {publishError && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm max-w-lg mx-auto mt-4 text-left">
+                        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm mt-6 text-left shadow-sm">
                           <p className="font-bold">Couldn't publish listing:</p>
                           <p>{publishError}</p>
                         </div>
                       )}
 
-                      <div className="pt-8 flex flex-col sm:flex-row justify-center gap-4">
-                        <button onClick={() => setStep(2)} disabled={isPublishing} className="px-6 py-4 border border-border text-muted font-bold rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50">
-                          Make Changes
-                        </button>
-                        <button onClick={handlePublish} disabled={isPublishing} className="px-8 py-4 bg-brand text-white font-bold rounded-xl shadow-md hover:bg-brand-dark transition-all flex items-center justify-center gap-2 disabled:opacity-70">
-                          {isPublishing && <Loader2 size={20} className="animate-spin" />}
-                          {isPublishing ? "Publishing..." : "Publish Listing"}
+                      <div className="pt-8 flex justify-end border-t border-border mt-8">
+                        <button onClick={handlePublish} disabled={isPublishing} className="px-8 py-4 bg-brand text-white font-bold rounded-xl shadow-md hover:bg-brand-dark transition-all flex items-center justify-center gap-2 disabled:opacity-70 text-lg w-full sm:w-auto">
+                          {isPublishing && <Loader2 size={24} className="animate-spin" />}
+                          {isPublishing ? "Publishing to Swaptopia..." : "Publish Listing Now"}
                         </button>
                       </div>
                     </>

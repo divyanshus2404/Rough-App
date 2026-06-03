@@ -49,7 +49,9 @@ create table public.listings (
   title text not null,
   description text,
   price numeric(10,2) not null,
+  currency text default 'INR',
   is_swap_open boolean default false,
+  swap_preferences text[] default array[]::text[],
   condition text not null, -- 'New', 'Like New', 'Good', 'Fair', 'Poor'
   images text[] default array[]::text[],
   status text default 'active', -- 'active', 'sold', 'archived'

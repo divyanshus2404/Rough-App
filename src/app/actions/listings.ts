@@ -9,7 +9,9 @@ export async function createListing(data: {
   condition: string
   description: string
   price: number
+  currency: string
   isSwapOpen: boolean
+  swapPreferences: string[]
   images: string[]
 }) {
   const cookieStore = await cookies()
@@ -60,8 +62,10 @@ export async function createListing(data: {
       title: data.title,
       description: data.description,
       price: data.price,
+      currency: data.currency,
       condition: data.condition,
       is_swap_open: data.isSwapOpen,
+      swap_preferences: data.swapPreferences,
       images: data.images,
       status: 'active'
     })
