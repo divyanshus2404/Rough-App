@@ -35,6 +35,10 @@ insert into public.categories (name, slug, icon) values
   ('Electronics', 'electronics', 'laptop'),
   ('Furniture', 'furniture', 'sofa'),
   ('Clothing', 'clothing', 'shirt'),
+  ('Stationery', 'stationery', 'pen-tool'),
+  ('Sports & Outdoors', 'sports-outdoors', 'bike'),
+  ('Vehicles/Bikes', 'vehicles-bikes', 'car'),
+  ('Sublets & Housing', 'sublets-housing', 'home'),
   ('Miscellaneous', 'misc', 'box');
 
 -- 3. LISTINGS TABLE
