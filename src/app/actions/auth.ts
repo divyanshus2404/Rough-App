@@ -3,19 +3,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export async function registerStudent(data: {
-  email: string
-  name: string
+export async function completeVerification(data: {
   enrollmentNumber: string
   faceScanBase64: string // data URL
   signatureBase64: string // data URL
 }) {
-  const { email, name, enrollmentNumber, faceScanBase64, signatureBase64 } = data
-
-  // 1. Validate .edu email
-  if (!email.toLowerCase().endsWith('.edu')) {
-    return { success: false, error: 'You must use a valid .edu university email address.' }
-  }
+  const { enrollmentNumber, faceScanBase64, signatureBase64 } = data
 
   const cookieStore = await cookies()
   const supabase = createServerClient(
@@ -35,35 +28,24 @@ export async function registerStudent(data: {
     }
   )
 
-  // 2. Generate a temporary password (since we are faking OTP/Biometric for this demo)
-  // In a real app, you would use supabase.auth.signInWithOtp()
-  // But since the user wants a strict signup form, we create a user with a secure random password.
-  const tempPassword = Math.random().toString(36).slice(-10) + 'A1!'
-
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password: tempPassword,
-    options: {
-      data: { full_name: name }
-    }
-  })
-
-  if (authError) {
-    return { success: false, error: authError.message }
+  // Get current logged-in user (from Google OAuth)
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    return { success: false, error: 'You must be logged in to complete verification.' }
   }
 
-  const userId = authData.user?.id
-  if (!userId) {
-    return { success: false, error: 'Failed to create user account.' }
+  // Ensure email is .edu
+  if (!user.email?.toLowerCase().endsWith('.edu')) {
+    return { success: false, error: 'You must use a valid .edu university email address with your Google account.' }
   }
 
   try {
-    // 3. Upload Face Scan to Storage
+    // 1. Upload Face Scan to Storage
     let faceScanUrl = ''
     if (faceScanBase64) {
       const base64Data = faceScanBase64.split(',')[1]
       const buffer = Buffer.from(base64Data, 'base64')
-      const fileName = `${userId}/face_scan_${Date.now()}.jpg`
+      const fileName = `${user.id}/face_scan_${Date.now()}.jpg`
       
       const { error: uploadError } = await supabase.storage
         .from('verification_documents')
@@ -74,12 +56,12 @@ export async function registerStudent(data: {
       faceScanUrl = supabase.storage.from('verification_documents').getPublicUrl(fileName).data.publicUrl
     }
 
-    // 4. Upload Signature to Storage
+    // 2. Upload Signature to Storage
     let signatureUrl = ''
     if (signatureBase64) {
       const base64Data = signatureBase64.split(',')[1]
       const buffer = Buffer.from(base64Data, 'base64')
-      const fileName = `${userId}/signature_${Date.now()}.png`
+      const fileName = `${user.id}/signature_${Date.now()}.png`
       
       const { error: uploadError } = await supabase.storage
         .from('verification_documents')
@@ -90,20 +72,19 @@ export async function registerStudent(data: {
       signatureUrl = supabase.storage.from('verification_documents').getPublicUrl(fileName).data.publicUrl
     }
 
-    // 5. Insert into profiles table
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: userId,
-      email: email,
-      full_name: name,
-      enrollment_number: enrollmentNumber,
-      face_scan_url: faceScanUrl,
-      signature_url: signatureUrl,
-      verification_status: 'pending',
-      is_verified_student: false
-    })
+    // 3. Update the existing profile record (which was auto-created by the Postgres trigger)
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        enrollment_number: enrollmentNumber,
+        face_scan_url: faceScanUrl,
+        signature_url: signatureUrl,
+        verification_status: 'pending'
+      })
+      .eq('id', user.id)
 
-    if (profileError) {
-      throw new Error(`Profile creation failed: ${profileError.message}`)
+    if (updateError) {
+      throw new Error(`Failed to update profile: ${updateError.message}`)
     }
 
     return { success: true }
