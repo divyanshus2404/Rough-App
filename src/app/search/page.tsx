@@ -9,9 +9,10 @@ export const dynamic = 'force-dynamic'
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: { q?: string }
+  searchParams: Promise<{ q?: string }>
 }) {
-  const query = searchParams.q || ''
+  const params = await searchParams;
+  const query = params?.q || ''
   const cookieStore = await cookies()
 
   const supabase = createServerClient(
@@ -73,6 +74,7 @@ export default async function SearchPage({
               <Link key={listing.id} href={`/listing/${listing.id}`} className="group relative bg-surface rounded-2xl border border-border/50 overflow-hidden hover:shadow-hover transition-all duration-300 flex flex-col">
                 <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
                   {listing.images && listing.images.length > 0 ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted">No Image</div>

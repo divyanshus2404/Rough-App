@@ -133,6 +133,7 @@ export default function ProfilePage() {
                 <div key={listing.id} className="bg-surface rounded-2xl border border-border/50 overflow-hidden flex flex-col group relative">
                   <div className="aspect-video bg-gray-100 dark:bg-gray-800 relative">
                     {listing.images?.[0] ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted">No Image</div>
