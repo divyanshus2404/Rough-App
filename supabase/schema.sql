@@ -16,6 +16,7 @@ create table public.profiles (
   verification_status text default 'pending', -- 'pending', 'verified', 'rejected'
   university_domain text,
   trust_score integer default 100,
+  is_public boolean default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
