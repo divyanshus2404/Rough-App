@@ -8,12 +8,12 @@ export async function updateSession(request: NextRequest) {
 
   // If Supabase URL isn't configured, bypass the middleware so the app doesn't crash
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return supabaseResponse
+    // During build or dev without env vars, just continue silently
   }
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder',
     {
       cookies: {
         getAll() {
